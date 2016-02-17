@@ -57,12 +57,7 @@ public class BookService extends IntentService {
             }
         }
     }
-    private boolean isNetworkAvailable() {
-        ConnectivityManager connectivityManager
-                = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
-        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
-        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
-    }
+
     /**
      * Handle action Foo in the provided background thread with the provided
      * parameters.

@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
@@ -15,6 +17,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -33,6 +36,8 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
     private final String EAN_CONTENT="eanContent";
     private static final String SCAN_FORMAT = "scanFormat";
     private static final String SCAN_CONTENTS = "scanContents";
+    private TextView no_internet_txt;
+    private FrameLayout bookInfo;
 
     private String mScanFormat = "Format:";
     private String mScanContents = "Contents:";
@@ -55,6 +60,8 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
 
         rootView = inflater.inflate(R.layout.fragment_add_book, container, false);
         ean = (EditText) rootView.findViewById(R.id.ean);
+        no_internet_txt  = (TextView) rootView.findViewById(R.id.no_internet_txt);
+        bookInfo = (FrameLayout) rootView.findViewById(R.id.bookInfo);
 
         ean.addTextChangedListener(new TextWatcher() {
             @Override
@@ -154,13 +161,24 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
                 null
         );
     }
+    private boolean isNetworkAvailable() {
+        ConnectivityManager connectivityManager
+                = (ConnectivityManager) getActivity().getSystemService(getActivity().CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
+    }
 
     @Override
     public void onLoadFinished(android.support.v4.content.Loader<Cursor> loader, Cursor data) {
         if (!data.moveToFirst()) {
+            if(isNetworkAvailable() == false){
+                no_internet_txt.setVisibility(View.VISIBLE);
+                bookInfo.setVisibility(View.GONE);
+            }
             return;
         }
-
+        no_internet_txt.setVisibility(View.GONE);
+        bookInfo.setVisibility(View.VISIBLE);
         String bookTitle = data.getString(data.getColumnIndex(AlexandriaContract.BookEntry.TITLE));
         ((TextView) rootView.findViewById(R.id.bookTitle)).setText(bookTitle);
 
