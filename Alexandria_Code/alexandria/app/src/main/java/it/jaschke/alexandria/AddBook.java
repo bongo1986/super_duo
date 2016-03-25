@@ -4,16 +4,26 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.ImageFormat;
+import android.graphics.Rect;
+import android.graphics.YuvImage;
+import android.hardware.Camera;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.util.Patterns;
+import android.util.SparseArray;
 import android.view.LayoutInflater;
+import android.view.SurfaceHolder;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
@@ -22,13 +32,24 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.vision.Frame;
+import com.google.android.gms.vision.barcode.BarcodeDetector;
+import com.google.android.gms.vision.barcode.Barcode;
+import com.google.zxing.Result;
 
+
+import java.io.ByteArrayOutputStream;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+
+import it.jaschke.alexandria.CameraPreview.CameraPreview;
 import it.jaschke.alexandria.data.AlexandriaContract;
 import it.jaschke.alexandria.services.BookService;
 import it.jaschke.alexandria.services.DownloadImage;
+import me.dm7.barcodescanner.zxing.ZXingScannerView;
 
 
-public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
+public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> , ZXingScannerView.ResultHandler {
     private static final String TAG = "INTENT_TO_SCAN_ACTIVITY";
     private EditText ean;
     private final int LOADER_ID = 1;
@@ -38,10 +59,14 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
     private static final String SCAN_CONTENTS = "scanContents";
     private TextView no_internet_txt;
     private FrameLayout bookInfo;
+    private boolean scannBtnClicked = false;
 
     private String mScanFormat = "Format:";
     private String mScanContents = "Contents:";
-
+    private CameraPreview mCameraPreview;
+    Context context;
+    private ZXingScannerView mScannerView;
+    private ZXingScannerView.ResultHandler scanningResultHandler;
 
 
     public AddBook(){
@@ -54,14 +79,42 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
             outState.putString(EAN_CONTENT, ean.getText().toString());
         }
     }
+    @Override
+    public void onResume() {
+        super.onResume();
+        mScannerView.setResultHandler(this); // Register ourselves as a handler for scan results.
+        if(scannBtnClicked) {
+            mScannerView.startCamera();          // Start camera on resume
+            mScannerView.setVisibility(View.VISIBLE);
+        }
+
+    }
 
     @Override
+    public void onPause() {
+        super.onPause();
+        mScannerView.stopCamera();
+    }
+    @Override
+    public void handleResult(Result result) {
+        Log.i("barcode", result.getText());
+        ean.setText(result.getText());
+        //mScannerView.resumeCameraPreview(this);
+        mScannerView.stopCamera();
+        scannBtnClicked = false;
+        mScannerView.setVisibility(View.GONE);
+    }
+    @Override
     public View onCreateView(final LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-
+        scanningResultHandler = this;
         rootView = inflater.inflate(R.layout.fragment_add_book, container, false);
+        context = getActivity();
         ean = (EditText) rootView.findViewById(R.id.ean);
         no_internet_txt  = (TextView) rootView.findViewById(R.id.no_internet_txt);
-        bookInfo = (FrameLayout) rootView.findViewById(R.id.bookInfo);
+        //bookInfo = (FrameLayout) rootView.findViewById(R.id.bookInfo);
+
+        mScannerView = (ZXingScannerView) rootView.findViewById(R.id.zbar_scanner_view);   // Programmatically initialize the scanner view
+        //getActivity().setContentView(mScannerView);                // Set the scanner view as the content view
 
         ean.addTextChangedListener(new TextWatcher() {
             @Override
@@ -93,22 +146,27 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
                 AddBook.this.restartLoader();
             }
         });
-
+        /*
+        BarcodeDetector detector =
+                new BarcodeDetector.Builder( getActivity())
+                        .setBarcodeFormats(Barcode.DATA_MATRIX | Barcode.QR_CODE)
+                        .build();
+*/
         rootView.findViewById(R.id.scan_button).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // This is the callback method that the system will invoke when your button is
-                // clicked. You might do this by launching another app or by including the
-                //functionality directly in this app.
-                // Hint: Use a Try/Catch block to handle the Intent dispatch gracefully, if you
-                // are using an external app.
-                //when you're done, remove the toast below.
-                Context context = getActivity();
-                CharSequence text = "This button should let you scan a book for its barcode!";
-                int duration = Toast.LENGTH_SHORT;
 
-                Toast toast = Toast.makeText(context, text, duration);
-                toast.show();
+                if(!scannBtnClicked) {
+                    mScannerView.startCamera();          // Start camera on resume
+                    mScannerView.setVisibility(View.VISIBLE);
+                    scannBtnClicked = true;
+                    mScannerView.resumeCameraPreview(scanningResultHandler);
+                }
+                else{
+                    mScannerView.stopCamera();
+                    scannBtnClicked = false;
+                    mScannerView.setVisibility(View.GONE);
+                }
 
             }
         });
@@ -135,6 +193,8 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
             ean.setText(savedInstanceState.getString(EAN_CONTENT));
             ean.setHint("");
         }
+
+
 
         return rootView;
     }
@@ -173,12 +233,12 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
         if (!data.moveToFirst()) {
             if(isNetworkAvailable() == false){
                 no_internet_txt.setVisibility(View.VISIBLE);
-                bookInfo.setVisibility(View.GONE);
+                //bookInfo.setVisibility(View.GONE);
             }
             return;
         }
         no_internet_txt.setVisibility(View.GONE);
-        bookInfo.setVisibility(View.VISIBLE);
+        //bookInfo.setVisibility(View.VISIBLE);
         String bookTitle = data.getString(data.getColumnIndex(AlexandriaContract.BookEntry.TITLE));
         ((TextView) rootView.findViewById(R.id.bookTitle)).setText(bookTitle);
 
