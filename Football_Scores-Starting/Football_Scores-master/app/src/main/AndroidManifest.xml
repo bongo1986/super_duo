@@ -4,13 +4,15 @@
 
     <uses-permission
         android:name="android.permission.INTERNET"
+        android:minSdkVersion="11"
         android:maxSdkVersion="22" />
 
     <application
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
-        android:theme="@style/AppTheme" >
+        android:theme="@style/AppTheme"
+        android:supportsRtl="true">
         <activity
             android:name=".MainActivity"
             android:label="@string/app_name" >
@@ -23,7 +25,9 @@
 
         <provider
             android:name=".ScoresProvider"
-            android:authorities="barqsoft.footballscores" />
+            android:authorities="barqsoft.footballscores"
+            android:exported="false"
+            android:grantUriPermissions="true"/>
 
         <activity
             android:name=".AboutActivity"
@@ -34,6 +38,19 @@
                 android:value="barqsoft.footballscores.MainActivity" />
         </activity>
         <service android:name=".service.myFetchService" />
+        <service
+            android:name="barqsoft.footballscores.service.WidgetService"
+            android:permission="android.permission.BIND_REMOTEVIEWS" />
+        <receiver android:name=".ScoresAppWidgetProvider">
+
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE"></action>
+            </intent-filter>
+
+            <meta-data android:name="android.appwidget.provider"
+                android:resource="@xml/scoreswidget"></meta-data>
+
+        </receiver>
     </application>
 
 </manifest>

@@ -192,11 +192,7 @@ public class myFetchService extends IntentService
                 //add leagues here in order to have them be added to the DB.
                 // If you are finding no data in the app, check that this contains all the leagues.
                 // If it doesn't, that can cause an empty DB, bypassing the dummy data routine.
-                if(     League.equals(PREMIER_LEAGUE)      ||
-                        League.equals(SERIE_A)             ||
-                        League.equals(BUNDESLIGA1)         ||
-                        League.equals(BUNDESLIGA2)         ||
-                        League.equals(PRIMERA_DIVISION)     )
+                if(     true     )
                 {
                     match_id = match_data.getJSONObject(LINKS).getJSONObject(SELF).
                             getString("href");
@@ -240,6 +236,7 @@ public class myFetchService extends IntentService
                     match_values.put(DatabaseContract.scores_table.MATCH_ID,match_id);
                     match_values.put(DatabaseContract.scores_table.DATE_COL,mDate);
                     match_values.put(DatabaseContract.scores_table.TIME_COL,mTime);
+                    match_values.put(DatabaseContract.scores_table.DATE_TIME_COL,mDate + " " + mTime);
                     match_values.put(DatabaseContract.scores_table.HOME_COL,Home);
                     match_values.put(DatabaseContract.scores_table.AWAY_COL,Away);
                     match_values.put(DatabaseContract.scores_table.HOME_GOALS_COL,Home_goals);

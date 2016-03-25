@@ -25,6 +25,7 @@ public class ScoresDBHelper extends SQLiteOpenHelper
                 + scores_table._ID + " INTEGER PRIMARY KEY,"
                 + scores_table.DATE_COL + " TEXT NOT NULL,"
                 + scores_table.TIME_COL + " INTEGER NOT NULL,"
+                + scores_table.DATE_TIME_COL + " INTEGER NOT NULL,"
                 + scores_table.HOME_COL + " TEXT NOT NULL,"
                 + scores_table.AWAY_COL + " TEXT NOT NULL,"
                 + scores_table.LEAGUE_COL + " INTEGER NOT NULL,"
