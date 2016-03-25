@@ -52,8 +52,6 @@ public class ScoresAppWidgetProvider extends AppWidgetProvider {
 
 
             int currentWidgetId = appWidgetIds[i];
-            String url = "http://www.tutorialspoint.com";
-
 
             RemoteViews mView = new RemoteViews(context.getPackageName(),R.layout.scores_list_widget);
 
@@ -62,8 +60,6 @@ public class ScoresAppWidgetProvider extends AppWidgetProvider {
 
             intent.setData(Uri.parse(intent.toUri(Intent.URI_INTENT_SCHEME)));
             mView.setRemoteAdapter(appWidgetIds[i], R.id.widgetCollectionList, intent);
-
-
 
             if(anyMatchToday) {
                 mView.setViewVisibility(R.id.widgetCollectionList, View.VISIBLE);
